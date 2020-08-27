@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Simulación</title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+<style>
+* {
+    padding: 0;
+    margin: 0;
+}
+canvas {
+    background: #eee;
+    display: block;
+    margin: 0 auto;
+}
+.placa {
+    display: block;
+    margin: 0 auto;
+    width: 1000px;
+}
+.placa1 {
+    background: #FF0000;
+}
+.placa2 {
+    background: #0000FF;
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Simulación de particula en un campo eléctrico uniforme</h5>
+            <div class="row">
+                <div class="col-12 col-sm-12 col-md-4 col-lg-4 col-xl-4">
+                    <div class="form-group">
+                        <label for="m">Masa</label>
+                        <input type="number" class="form-control" id="m" name="m" min="0" max="1" step="0.00000000001" value="1">
+                    </div>
+                </div>
+                <div class="col-12 col-sm-12 col-md-4 col-lg-4 col-xl-4">
+                    <div class="form-group">
+                        <label for="q">Q</label>
+                        <input type="number" class="form-control" id="q" name="q" min="0" max="1" step="0.01" value="0.1">
+                    </div>
+                </div>
+                <div class="col-12 col-sm-12 col-md-4 col-lg-4 col-xl-4">
+                    <div class="form-group">
+                        <label for="q">Vx</label>
+                        <input type="number" class="form-control" id="vx" name="vx" min="0" max="10" step="0.0001" value="1">
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-12 col-sm-12 col-md-6 col-lg-2 col-xl-2">
+                    <p><small>ddp=<span id="DdP_span">0</span></small></p>
+                    <p><small>E=<span id="E_span">0</span></small></p>
+                </div>
+                <div class="col-12 col-sm-12 col-md-6 col-lg-2 col-xl-2">
+                    <p><small>m=<span id="m_span">0</span></small></p>
+                    <p><small>Q=<span id="Q_span">0</span></small></p>
+                </div>
+                <div class="col-12 col-sm-12 col-md-6 col-lg-2 col-xl-2">
+                    <p><small>Vx=<span id="Vx_span">0</span></small></p>
+                    <p><small>x=<span id="x_span">0</span></small></p>
+                </div>
+                <div class="col-12 col-sm-12 col-md-6 col-lg-2 col-xl-2">
+                    <p><small>Fy=<span id="Fy_span">0</span></small></p>
+                    <p><small>ay=<span id="ay_span">0</span></small></p>
+                </div>
+                <div class="col-12 col-sm-12 col-md-6 col-lg-2 col-xl-2">
+                    <p><small>Vy=<span id="Vy_span">0</span></small></p>
+                    <p><small>y=<span id="y_span">0</span></small></p>
+                </div>
+            </div>
+            <canvas id="myCanvas" width="1200" height="300"></canvas>
+            <div class="form-group">
+                <label for="ddp">Campo magnético</label>
+                <input type="range" class="form-control-range" id="ddp" name="ddp" min="-100000" max="100000" step="0.01">
+            </div>
+            <input type="button" id="start" name="start" value="Iniciar" class="btn btn-primary">
+            <input type="button" id="restart" name="restart" value="Reiniciar" class="btn btn-primary">
+        </div>
+    </div>
+</div>
+<script>
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+    
+    var m;
+    var Q = 0.000000001;
+    var t = 0;
+    var dt = 0.001;
+    var x = 0;
+    var y = canvas.height/2;
+    var z = 0;
+
+
+    //placas
+    var paddleHeight = 10;
+    var paddleWidth = 1200;
+    var paddleX = 0;
+    var radio = 15;
+
+    var g;
+    var dist = canvas.height - 2 * paddleHeight;
+
+
+    var y0;
+    var Vy0;
+    var PosY;
+    var dx;
+    var dy;
+    var ddp;
+    var E;
+    var Fg;
+    var Fe;
+    var ay;
+    var Vx;//*
+    
+    var run;
+
+
+    function drawBall() {
+        ctx.beginPath();
+        ctx.arc(x, y, radio, 0, Math.PI*2);
+        ctx.fillStyle = "#0095DD";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    function drawPaddleUp() {
+        ctx.beginPath();
+        ctx.rect(paddleX, paddleHeight/2, paddleWidth, paddleHeight);
+        ctx.fillStyle = "#0095DD";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    function drawPaddleDown() {
+        ctx.beginPath();
+        ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
+        ctx.fillStyle = "#FF0000";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ddp = document.getElementById('ddp').value;//*
+        m = document.getElementById('m').value;//*
+        Q = document.getElementById('q').value;//*
+        Vx = document.getElementById('vx').value;//*
+        E = ddp / dist;
+        Fg = m * g;
+        Fe = Q * E;
+        ay = ( Fg + Fe ) / m;
+
+        if( t == 0 ) {
+            y0 =  canvas.height/2 ;
+            Vy0 = 0 ;
+            PosY =  y0;
+
+        } else {
+            PosY = y0 + Vy0 * ( dt ) + ( ay * ( dt ) ) / 2;
+        }
+
+        //var dy = ( ay * t ) / 2 ;
+
+        dx = Vx;
+        dy = PosY - y0;
+
+        //Ajustar escala
+        dx = dx * 1;
+        dy = dy * 100;
+
+        y0 = PosY;
+        Vy0 = Vy0 + ay * ( dt );
+
+        if(x + dx > canvas.width-radio || y + dy > canvas.height - radio - paddleHeight || y + dy < radio + paddleHeight) {
+            dx = 0;
+            dy = 0;
+            Vy0 = 0;
+            Vx=0;
+            document.getElementById('vx').value=0;
+        }
+
+        drawBall();
+        //drawPaddleUp();
+        drawPaddleDown();
+                
+        document.getElementById('DdP_span').innerHTML = ddp;
+        document.getElementById('Vy_span').innerHTML = Vy0;
+        document.getElementById('Vx_span').innerHTML = Vx;
+        document.getElementById('E_span').innerHTML = E;
+        document.getElementById('x_span').innerHTML = x;
+        document.getElementById('y_span').innerHTML = y;
+        document.getElementById('m_span').innerHTML = m;
+        document.getElementById('Q_span').innerHTML = Q;
+        document.getElementById('Fy_span').innerHTML = Fg + Fe;
+        document.getElementById('ay_span').innerHTML = ay;
+
+        x += dx;
+        y += dy;
+        t = t + 0.01;
+    }
+
+    function init() {
+        clearInterval(run);
+        x = 0;
+        t = 0;
+        PosY = y0 = y = canvas.height/2 ;
+        Vy0 = 0 ;
+        
+        draw();
+    }
+
+    function start() {
+        run = setInterval(draw, 10);
+    }
+
+    function set_gravity() {
+        if( $('#gravity').prop('checked') ) {
+            g = 9.82;
+        } else {
+            g = 0;
+        }
+        init();
+    }
+
+    function set_m() {
+        m = document.getElementById('m').value;//*
+    }
+
+    $( document ).ready(function() {
+        set_gravity();
+        set_m();
+        init();
+                
+                
+        
+        $( '#start' ).click(function(){
+            $( '#m' ).prop( "readonly", true );
+            $( '#q' ).prop( "readonly", true );
+            $( '#vx' ).prop( "readonly", true );
+            $( '#gravity' ).prop( "disabled", true );
+            start();
+        });
+        $( '#restart' ).click(function(){
+            $( '#m' ).prop( "readonly", false );
+            $( '#q' ).prop( "readonly", false );
+            $( '#vx' ).prop( "readonly", false );
+            $( '#gravity' ).prop( "disabled", false );
+            init();
+        });
+        $( '#m', '#q', '#vx', '#ddp' ).change(function(){
+            init();
+        });
+                
+        $( '#gravity' ).change(function(){
+            set_gravity();
+        });
+    });
+</script>
+</body>
+</html>
